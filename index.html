@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apostrophe Drop-Off</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      height: 100%;
+    }
+    .game-container {
+      width: 100%;
+      max-width: 700px;
+      height: 700px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    .instructions {
+      background-color: #e8f0fe;
+      border: 1px solid #3f51b5;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 14px;
+      margin-bottom: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .phrase-box, .feedback, .controls, .timer-settings, .speed-settings, #score, #timerDisplay {
+      width: 100%;
+      max-width: 700px;
+      text-align: center;
+    }
+    .phrase-box {
+      font-size: 20px;
+      margin: 10px 0;
+    }
+    .drop-zone {
+      display: inline-block;
+      width: 16px;
+      height: 24px;
+      vertical-align: middle;
+      border-bottom: 2px dashed #3f51b5;
+      margin: 0 1px;
+    }
+    .draggable {
+      background-color: #3f51b5;
+      color: white;
+      padding: 5px 10px;
+      margin: 5px;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: grab;
+      display: inline-block;
+    }
+    .feedback {
+      font-weight: bold;
+      font-size: 18px;
+    }
+    .correct {
+      background: #e8f0fe;
+      border: 2px solid #3f51b5;
+      color: #3f51b5;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .incorrect {
+      background: #f44336;
+      color: white;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .controls button {
+      background-color: #3f51b5;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 16px;
+      margin: 4px;
+      cursor: pointer;
+    }
+    @media (max-width: 768px) {
+      .phrase-box {
+        font-size: 18px;
+      }
+      .draggable {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>Apostrophe Drop-Off</h1>
+    <div class="instructions">
+      Drag the correct possessive form (’s, s’, or just ’) into the first word.<br>
+      For example, “the dogs tail” becomes “the dog’s tail”.
+    </div>
+    <div class="timer-settings">
+      ⏳ Timer: <select id="timer">
+        <option value="30">30s</option>
+        <option value="60">1m</option>
+        <option value="90">1:30</option>
+        <option value="120">2m</option>
+      </select>
+    </div>
+    <div class="speed-settings">
+      ⚡ Speed: <select id="speed">
+        <option value="slow">Slow</option>
+        <option value="medium" selected>Medium</option>
+        <option value="fast">Fast</option>
+      </select>
+    </div>
+    <div class="controls">
+      <button onclick="startGame()">Start</button>
+      <button onclick="pauseGame()">Pause</button>
+      <button onclick="resumeGame()">Resume</button>
+      <button onclick="stopGame()">Stop</button>
+    </div>
+    <div class="phrase-box" id="phraseBox"></div>
+    <div>
+      <span class="draggable" draggable="true" ondragstart="drag(event)" id="’s">’s</span>
+      <span class="draggable" draggable="true" ondragstart="drag(event)" id="s’">s’</span>
+      <span class="draggable" draggable="true" ondragstart="drag(event)" id="’">’</span>
+    </div>
+    <div class="feedback" id="feedback"></div>
+    <div id="score">Score: 0</div>
+    <div id="timerDisplay"></div>
+  </div>
+<script>
+const phrases = [
+  { raw: "dog tail", correct: "dog’s tail" },
+  { raw: "dogs tails", correct: "dogs’ tails" },
+  { raw: "child toy", correct: "child’s toy" },
+  { raw: "children toys", correct: "children’s toys" },
+  { raw: "boss office", correct: "boss’s office" },
+  { raw: "bosses meetings", correct: "bosses’ meetings" },
+  { raw: "students books", correct: "students’ books" },
+  { raw: "woman purse", correct: "woman’s purse" },
+  { raw: "men shoes", correct: "men’s shoes" },
+  { raw: "cats whiskers", correct: "cats’ whiskers" }
+];
+let currentPhrase = null, timerInterval, timeLeft = 0, score = 0;
+function drag(ev) {
+  ev.dataTransfer.setData("text", ev.target.id);
+}
+function startGame() {
+  clearInterval(timerInterval);
+  score = 0;
+  updateScore();
+  timeLeft = parseInt(document.getElementById("timer").value);
+  document.getElementById("timerDisplay").innerText = `${timeLeft}s left`;
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById("timerDisplay").innerText = `${timeLeft}s left`;
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      showFinalScore();
+    }
+  }, 1000);
+  renderPhrase();
+}
+function pauseGame() { clearInterval(timerInterval); }
+function resumeGame() { startGame(); }
+function stopGame() {
+  clearInterval(timerInterval);
+  document.getElementById("phraseBox").innerHTML = "";
+  document.getElementById("feedback").innerHTML = "";
+  document.getElementById("timerDisplay").innerText = "";
+  score = 0;
+  updateScore();
+}
+function updateScore() {
+  document.getElementById("score").innerText = `Score: ${score}`;
+}
+function renderPhrase() {
+  currentPhrase = phrases[Math.floor(Math.random() * phrases.length)];
+  const [first, second] = currentPhrase.raw.split(" ");
+  let html = "";
+  for (let i = 0; i <= first.length; i++) {
+    html += `<span class='drop-zone' ondragover='event.preventDefault()' ondrop='handleDrop(${i})'></span>${first[i] || ''}`;
+  }
+  html += ` ${second}`;
+  document.getElementById("phraseBox").innerHTML = html;
+  document.getElementById("feedback").innerText = "";
+}
+function handleDrop(index) {
+  const insert = event.dataTransfer.getData("text");
+  const base = currentPhrase.raw.split(" ");
+  const first = base[0];
+  let inserted = (insert === "’s") ? first.slice(0, index) + "’s" + first.slice(index) :
+                 (insert === "s’") ? first.slice(0, index) + "s’" + first.slice(index) :
+                 first.slice(0, index) + "’" + first.slice(index);
+  const fullPhrase = inserted + " " + base[1];
+  document.getElementById("phraseBox").innerHTML = inserted + " " + base[1];
+  if (fullPhrase === currentPhrase.correct) {
+    score++;
+    updateScore();
+    document.getElementById("feedback").innerHTML = `<div class='correct'>Okay! Somebody passed 6th grade.</div>`;
+  } else {
+    document.getElementById("feedback").innerHTML = `<div class='incorrect'>That noun just filed a complaint against you.</div>`;
+  }
+  setTimeout(() => { if (timeLeft > 0) renderPhrase(); }, 1000);
+}
+function showFinalScore() {
+  const message = score >= 8 ?
+    `🧠 Grammar Ninja! Final Score: ${score}` :
+    score >= 4 ? `😐 Not bad... Final Score: ${score}` :
+    `😬 Apostrophes are crying. Final Score: ${score}`;
+  document.getElementById("feedback").innerHTML = `<div class='incorrect'>${message}</div>`;
+  document.getElementById("phraseBox").innerHTML = "";
+}
+</script>
+</body>
+</html>
